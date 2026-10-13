@@ -1,7 +1,9 @@
 """Generate assets/boot.gif with Pillow.
 
 Run from any directory: python scripts/generate_boot.py
+Install dependencies: python -m pip install -r scripts/requirements.txt
 Use --font /path/to/a/monospace.ttf to override the platform font.
+Use --preview-dir preview to export review frames and a verification report.
 """
 
 from __future__ import annotations
@@ -227,11 +229,8 @@ class ImageReferences(HTMLParser):
             self.sources.extend(value for name, value in attrs if name == "src")
 
 
-def verify(output: Path, font: Path, sample_hashes: dict[str, str]):
+def verify(output: Path, font: Path, sample_hashes: dict[str, str], preview: Path | None = None):
     """Verify the encoded GIF, rather than assuming source frames were all saved."""
-    preview = ROOT / "preview"
-    frame_dir = preview / "frames"
-    frame_dir.mkdir(parents=True, exist_ok=True)
     decoded: list[Image.Image] = []
     durations = []
     hashes = []
@@ -254,14 +253,6 @@ def verify(output: Path, font: Path, sample_hashes: dict[str, str]):
     sources.feed((ROOT / "README.md").read_text(encoding="utf-8-sig"))
     assert sources.sources == ["./assets/boot.gif"], "Unexpected README image reference"
     assert (ROOT / sources.sources[0]).resolve() == output.resolve()
-    sheet = Image.new("RGB", (WIDTH, HEIGHT * len(indices)), (8, 13, 20))
-    for row, (name, index) in enumerate(indices.items()):
-        decoded[index].save(frame_dir / f"{name}.png")
-        sheet.paste(decoded[index], (0, row * HEIGHT))
-    sheet.save(preview / "contact-sheet.png")
-    for name in ("ready", "diagnostics"):
-        decoded[indices[name]].resize((375, round(HEIGHT * 375 / WIDTH)), Image.Resampling.LANCZOS).save(
-            frame_dir / f"mobile-{name}.png")
     report = {
         "file": output.relative_to(ROOT).as_posix(), "width": WIDTH, "height": HEIGHT,
         "frames": len(decoded), "duration_ms": sum(durations),
@@ -269,20 +260,32 @@ def verify(output: Path, font: Path, sample_hashes: dict[str, str]):
         "infinite_loop": True, "loop_seam_identical": True,
         "readme_image_exists": True, "font": font.name, "sample_frames": indices,
     }
-    (preview / "verification.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    if preview is not None:
+        frame_dir = preview / "frames"
+        frame_dir.mkdir(parents=True, exist_ok=True)
+        sheet = Image.new("RGB", (WIDTH, HEIGHT * len(indices)), (8, 13, 20))
+        for row, (name, index) in enumerate(indices.items()):
+            decoded[index].save(frame_dir / f"{name}.png")
+            sheet.paste(decoded[index], (0, row * HEIGHT))
+        sheet.save(preview / "contact-sheet.png")
+        for name in ("ready", "diagnostics"):
+            decoded[indices[name]].resize((375, round(HEIGHT * 375 / WIDTH)), Image.Resampling.LANCZOS).save(
+                frame_dir / f"mobile-{name}.png")
+        (preview / "verification.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--font", type=Path, help="Path to a TrueType/OpenType monospace font")
+    parser.add_argument("--preview-dir", type=Path, help="Optional directory for review frames and report")
     args = parser.parse_args()
     font = find_font(args.font)
     display = Display(font)
     display.sequence()
     output = ROOT / "assets" / "boot.gif"
     sample_hashes = display.save(output)
-    verify(output, font, sample_hashes)
+    verify(output, font, sample_hashes, args.preview_dir)
 
 
 if __name__ == "__main__":
