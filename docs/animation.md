@@ -1,11 +1,9 @@
 # SH704 boot display
 
-The profile consists of one self-contained looping GIF and a short status line.
-All diagnostics are part of a fictional boot interface. No external images,
-statistics services, runtime scripts, or network requests are needed.
+The profile README contains only `assets/boot.gif`.
 
 Current render with Cascadia Mono: 1200 × 440 pixels, 88 encoded frames,
-10.27 seconds per loop, 507,931 bytes. Text is typed in short groups; the
+10.27 seconds per loop. Text is typed in short groups; the
 40-segment progress bar fills from 0 to 100%. Static scanlines, a restrained
 glow, a geometric SH monogram, and eased crossfades complete the display.
 
@@ -50,8 +48,7 @@ The final screen holds for 3.27 seconds. The transition returns to the exact fir
 frame, so the loop boundary has no flash.
 
 GitHub renders the relative `./assets/boot.gif` image in the profile README.
-The new public profile can be checked after the commit is pushed to `main`;
-local preview does not imply publication.
+Check the public profile after pushing the updated commit to `main`.
 
 ## Existing files
 

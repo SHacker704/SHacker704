@@ -1,4 +1,4 @@
-"""Render the fictional SH704 boot display with Pillow; no network or random input.
+"""Generate assets/boot.gif with Pillow.
 
 Run from any directory: python scripts/generate_boot.py
 Use --font /path/to/a/monospace.ttf to override the platform font.
@@ -72,23 +72,12 @@ class Display:
             level = int(4 * (1 - abs(y - HEIGHT / 2) / (HEIGHT / 2)))
             draw.line((0, y, WIDTH, y), fill=(8 + level, 13 + level, 20 + level))
         for x in range(32, WIDTH, 40):
-            draw.line((x, 76, x, 378), fill=(17, 25, 34))
-        for y in range(98, 379, 40):
+            draw.line((x, 76, x, 416), fill=(17, 25, 34))
+        for y in range(98, 417, 40):
             draw.line((32, y, 1168, y), fill=(17, 25, 34))
         draw.rectangle((24, 22, 1175, 417), outline=LINE)
         draw.line((24, 75, 1175, 75), fill=LINE)
-        draw.line((24, 378, 1175, 378), fill=LINE)
-        for x, direction in ((24, 1), (1175, -1)):
-            for y, vertical in ((22, 1), (417, -1)):
-                draw.line((x, y, x + 18 * direction, y), fill=MUTED)
-                draw.line((x, y, x, y + 13 * vertical), fill=MUTED)
-        self.text(draw, (53, 38), "SH704 / FIRMWARE INTERFACE", 24, BLUE)
-        self.text(draw, (962, 40), "ROM 07.04", 22, MUTED)
-        self.text(draw, (53, 392), "BOOT SEQUENCE", 20, MUTED)
-        self.text(draw, (930, 392), "SH704 // ONLINE", 20, MUTED)
-        for index in range(4):
-            x = 690 + index * 16
-            draw.rectangle((x, 399, x + 5, 404), fill=LINE)
+        self.text(draw, (53, 38), "SH704", 24, BLUE)
         return image
 
     def layer(self) -> Image.Image:
@@ -96,7 +85,6 @@ class Display:
 
     def monogram(self, draw, ready=False):
         draw.line((911, 102, 911, 352), fill=LINE, width=1)
-        self.text(draw, (966, 109), "NODE / 704", 20, MUTED)
         # Custom geometric S and H, drawn as circuitry rather than a font logo.
         x, y = 967, 171
         tone = BLUE if ready else (78, 104, 124)
@@ -108,10 +96,6 @@ class Display:
         draw.line((x + 153, y, x + 153, y + 74), fill=tone, width=7)
         draw.line((x + 91, y + 37, x + 153, y + 37), fill=tone, width=7)
         self.text(draw, (1009, 267), "704", 32, tone)
-        draw.line((967, 319, 1123, 319), fill=LINE)
-        for index in range(4):
-            xx = 980 + 37 * index
-            draw.rectangle((xx, 338, xx + 16, 342), fill=tone if ready else LINE)
 
     def boot(self, title="SH704 SYSTEM", status="INITIALIZING...", cursor=False):
         layer = self.layer()
@@ -122,7 +106,6 @@ class Display:
         if cursor:
             x = 63 + int(draw.textlength(status, font=self.font(34))) + 8
             draw.rectangle((x, 208, x + 15, 237), fill=BLUE)
-        self.text(draw, (63, 311), "COLD START / VISUAL ROM", 22, MUTED)
         return layer
 
     def diagnostics(self, completed=5, partial="", cursor=False, progress=None):
@@ -155,7 +138,6 @@ class Display:
         layer = self.layer()
         draw = ImageDraw.Draw(layer)
         self.monogram(draw, ready=True)
-        self.text(draw, (64, 106), "IDENTITY CONFIRMED", 22, MUTED)
         size = 100
         while draw.textlength("SHacker704", font=self.font(size)) > 800:
             size -= 1
