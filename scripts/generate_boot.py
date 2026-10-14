@@ -85,70 +85,61 @@ class Display:
     def layer(self) -> Image.Image:
         return Image.new("RGBA", (WIDTH, HEIGHT))
 
-    def monogram(self, draw, ready=False):
-        draw.line((911, 102, 911, 352), fill=LINE, width=1)
-        # Custom geometric S and H, drawn as circuitry rather than a font logo.
-        x, y = 967, 171
-        tone = BLUE if ready else (78, 104, 124)
-        draw.line(
-            ((x + 62, y), (x, y), (x, y + 37), (x + 62, y + 37),
-             (x + 62, y + 74), (x, y + 74)), fill=tone, width=7,
-        )
-        draw.line((x + 91, y, x + 91, y + 74), fill=tone, width=7)
-        draw.line((x + 153, y, x + 153, y + 74), fill=tone, width=7)
-        draw.line((x + 91, y + 37, x + 153, y + 37), fill=tone, width=7)
-        self.text(draw, (1009, 267), "704", 32, tone)
-
     def boot(self, title="SH704 SYSTEM", status="INITIALIZING...", cursor=False):
         layer = self.layer()
         draw = ImageDraw.Draw(layer)
-        self.monogram(draw)
-        self.text(draw, (60, 122), title, 54)
-        self.text(draw, (63, 208), status, 34, BLUE)
+        # Keep the typing origin fixed so the text does not shift as it appears.
+        title_x = (WIDTH - draw.textlength("SH704 SYSTEM", font=self.font(66))) / 2
+        status_x = (WIDTH - draw.textlength("INITIALIZING...", font=self.font(38))) / 2
+        self.text(draw, (title_x, 145), title, 66)
+        self.text(draw, (status_x, 245), status, 38, BLUE)
         if cursor:
-            x = 63 + int(draw.textlength(status, font=self.font(34))) + 8
-            draw.rectangle((x, 208, x + 15, 237), fill=BLUE)
+            x = int(status_x + draw.textlength(status, font=self.font(38))) + 8
+            draw.rectangle((x, 245, x + 16, 278), fill=BLUE)
         return layer
 
     def diagnostics(self, completed=5, partial="", cursor=False, progress=None):
         layer = self.layer()
         draw = ImageDraw.Draw(layer)
-        self.monogram(draw)
         for index, line in enumerate(DIAGNOSTICS[:completed]):
-            self.text(draw, (60, 99 + index * 38), line, 32)
+            self.text(draw, (80, 102 + index * 42), line, 36)
         if partial:
-            y = 99 + completed * 38
-            self.text(draw, (60, y), partial, 32, BLUE)
+            y = 102 + completed * 42
+            self.text(draw, (80, y), partial, 36, BLUE)
             if cursor:
-                x = 60 + int(draw.textlength(partial, font=self.font(32))) + 4
-                draw.rectangle((x, y + 28, x + 16, y + 30), fill=BLUE)
+                x = 80 + int(draw.textlength(partial, font=self.font(36))) + 4
+                draw.rectangle((x, y + 32, x + 18, y + 34), fill=BLUE)
         if progress is not None:
-            self.text(draw, (60, 300), "LOADING VISUAL SHELL", 22, MUTED)
-            left, top, right, bottom = 61, 335, 744, 354
+            self.text(draw, (80, 326), "LOADING VISUAL SHELL", 22, MUTED)
+            left, top, right, bottom = 81, 362, 1006, 381
             draw.line(((left + 5, top - 3), (left, top - 3), (left, bottom + 3),
                        (left + 5, bottom + 3)), fill=MUTED, width=2)
             draw.line(((right - 5, top - 3), (right, top - 3),
                        (right, bottom + 3), (right - 5, bottom + 3)), fill=MUTED, width=2)
             for index in range(40):
-                x = left + 12 + index * 16.6
+                step = (right - left - 24) / 40
+                x = left + 12 + index * step
                 color = BLUE if (index + 1) * 2.5 <= progress else (30, 43, 55)
-                draw.rectangle((int(x), top, int(x) + 12, bottom), fill=color)
-            self.text(draw, (777, 328), f"{progress:3d}%", 32, BLUE)
+                draw.rectangle((int(x), top, int(x) + int(step) - 4, bottom), fill=color)
+            self.text(draw, (1038, 355), f"{progress:3d}%", 32, BLUE)
         return layer
 
     def ready(self):
         layer = self.layer()
         draw = ImageDraw.Draw(layer)
-        self.monogram(draw, ready=True)
-        size = 100
-        while draw.textlength("SHacker704", font=self.font(size)) > 800:
+        size = 120
+        while draw.textlength("SHacker704", font=self.font(size)) > WIDTH - 160:
             size -= 1
         font = self.font(size)
-        nickname_x = 60 + (800 - draw.textlength("SHacker704", font=font)) / 2
-        self.text(draw, (nickname_x, 160), "SHacker704", size)
-        draw.line((65, 274, 856, 274), fill=LINE)
-        self.text(draw, (65, 307), "SYSTEM READY", 32, BLUE)
-        self.text(draw, (586, 310), "ACCESS GRANTED", 26, INK)
+        nickname_x = (WIDTH - draw.textlength("SHacker704", font=font)) / 2
+        self.text(draw, (nickname_x, 142), "SHacker704", size)
+        draw.line((250, 285, WIDTH - 250, 285), fill=LINE)
+        for value, y, text_size, color in (
+            ("SYSTEM READY", 309, 32, BLUE),
+            ("ACCESS GRANTED", 353, 26, INK),
+        ):
+            x = (WIDTH - draw.textlength(value, font=self.font(text_size))) / 2
+            self.text(draw, (x, y), value, text_size, color)
         return layer
 
     def compose(self, content: Image.Image):
